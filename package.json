@@ -1,0 +1,48 @@
+{
+  "name": "opensocial",
+  "version": "0.1.0",
+  "description": "Official CLI for creating, validating, previewing, and deploying sovereign OpenSocial pages.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "opensocial": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "templates",
+    "assets",
+    "scripts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node scripts/clean-dist.mjs && tsc",
+    "test": "vitest run src",
+    "audit": "npm audit --audit-level=moderate",
+    "prepublishOnly": "npm ci && npm test && npm run build && npm audit --audit-level=moderate"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Open-Social-Organization/opensocial-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Open-Social-Organization/opensocial-cli/issues"
+  },
+  "homepage": "https://github.com/Open-Social-Organization/opensocial-cli#readme",
+  "keywords": [
+    "opensocial",
+    "decentralized-social",
+    "sovereign-identity",
+    "signed-feeds",
+    "static-site",
+    "cli"
+  ],
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0",
+    "vitest": "^4.1.8"
+  }
+}

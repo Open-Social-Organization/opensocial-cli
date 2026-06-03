@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OpenSocial Sovereign Page</title>
+    <meta
+      name="description"
+      content="A sovereign OpenSocial page template with a signed profile and feed."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="alternate" type="application/json" href="./profile.json" title="OpenSocial profile" />
+    <link rel="alternate" type="application/json" href="./feed.json" title="OpenSocial feed" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="profile-hero">
+        <img src="./assets/open-social-logo.png" alt="" class="profile-logo" />
+        <div>
+          <p class="network-label">OpenSocial Sovereign Page</p>
+          <h1 data-profile-name>Loading profile</h1>
+          <p data-profile-bio></p>
+          <div class="profile-links">
+            <a href="./profile.json">profile.json</a>
+            <a href="./feed.json">feed.json</a>
+            <a href="./.well-known/opensocial.json">discovery</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="feed-section">
+        <div class="section-header">
+          <div>
+            <h2>Signed Feed</h2>
+            <p>Posts published from this page and signed by this identity.</p>
+          </div>
+          <span data-verification-status>Verifying</span>
+        </div>
+        <div class="post-list" data-posts></div>
+      </section>
+    </main>
+
+    <script type="module" src="./page.js"></script>
+  </body>
+</html>
