@@ -8,7 +8,7 @@
     "node": ">=20"
   },
   "bin": {
-    "opensocial": "./dist/cli.js"
+    "opensocial": "dist/cli.js"
   },
   "files": [
     "dist",
