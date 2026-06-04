@@ -12,9 +12,10 @@ It turns the protocol into a real user flow:
 2. write posts
 3. like, dislike, and comment with signed portable actions
 4. send encrypted direct messages
-5. check that everything verifies
-6. preview locally
-7. publish anywhere static files can be hosted
+5. read encrypted direct messages
+6. check that everything verifies
+7. preview locally
+8. publish anywhere static files can be hosted
 
 ## In One Minute
 
@@ -102,6 +103,14 @@ npx open-social-network message "Private hello" --to ./their-page
 ```
 
 The CLI encrypts the text for the recipient page and saves a message file in `private/messages/outbox/`. Send that file to the recipient by any channel you trust. Only the recipient page's message key can read the text.
+
+Read a private message:
+
+```bash
+npx open-social-network read-message ./message.json --from ./their-page
+```
+
+The CLI uses your page's private message key and the sender's public profile to verify and open the message locally.
 
 Check that the page is valid:
 
@@ -215,6 +224,7 @@ open-social-network react dislike --post post_001 --author person@example.com --
 open-social-network react none --post post_001 --author person@example.com --project ./my-page
 open-social-network comment "Great post" --post post_001 --author person@example.com --project ./my-page
 open-social-network message "Private hello" --to ./their-page --project ./my-page
+open-social-network read-message ./message.json --from ./their-page --project ./my-page
 open-social-network validate --project ./my-page
 open-social-network check --project ./my-page
 open-social-network preview --project ./my-page --port 4173

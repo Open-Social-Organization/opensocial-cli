@@ -22,13 +22,14 @@ import {
   exportPublicKeyJwk,
   generateIdentityKeyPair,
   generateMessageKeyPair,
+  importMessagePrivateKeyJwk,
   importMessagePublicKeyJwk,
   importPrivateKeyJwk,
   publicJwkFromPrivateJwk,
   publicMessageJwkFromPrivateJwk,
 } from './protocol/keys.js';
 import { createFollowList } from './protocol/follows.js';
-import { encryptDirectMessage } from './protocol/direct-messages.js';
+import { decryptDirectMessage, encryptDirectMessage } from './protocol/direct-messages.js';
 import { signAction, signPost } from './protocol/signing.js';
 import type {
   DeployTarget,
@@ -194,6 +195,18 @@ export interface CreatedDirectMessageSummary {
   recipient: OpenSocialNetworkIdentity;
 }
 
+export interface ReadDirectMessageOptions {
+  messagePath: string;
+  sender: string;
+}
+
+export interface ReadDirectMessageSummary {
+  sender: OpenSocialNetworkIdentity;
+  recipient: OpenSocialNetworkIdentity;
+  content: string;
+  createdAt: string;
+}
+
 export async function addReaction(
   projectDirInput: string,
   options: AddReactionOptions,
@@ -228,7 +241,10 @@ export async function createDirectMessage(
   const projectDir = resolve(projectDirInput);
   const privateJwk = await requirePrivateKey(projectDir);
   const profile = await readJson<OpenSocialNetworkIdentity>(profilePath(projectDir));
-  const recipient = await readRecipientProfile(options.recipient);
+  const recipient = await readProfileInput(
+    options.recipient,
+    'Could not find the recipient profile. Use --to with a page folder, public folder, profile.json file, or profile URL.',
+  );
 
   if (recipient.handle === profile.handle) {
     throw new Error('Choose another page to message.');
@@ -257,11 +273,56 @@ export async function createDirectMessage(
   return { message, outputPath, recipient };
 }
 
+export async function readDirectMessage(
+  projectDirInput: string,
+  options: ReadDirectMessageOptions,
+): Promise<ReadDirectMessageSummary> {
+  const projectDir = resolve(projectDirInput);
+  const profile = await readJson<OpenSocialNetworkIdentity>(profilePath(projectDir));
+  const messagePrivateJwk = await requireMessagePrivateKey(projectDir);
+  const message = await readJson<OpenSocialNetworkDirectMessage>(resolve(options.messagePath));
+  const sender = await readProfileInput(
+    options.sender,
+    'Could not find the sender profile. Use --from with a page folder, public folder, profile.json file, or profile URL.',
+  );
+
+  if (message.recipient !== profile.handle) {
+    throw new Error('This message was sent to a different page.');
+  }
+
+  if (message.sender !== sender.handle) {
+    throw new Error('The sender profile does not match this message.');
+  }
+
+  const content = await decryptDirectMessage(
+    message,
+    await importMessagePrivateKeyJwk(messagePrivateJwk),
+    sender,
+  );
+
+  return {
+    sender,
+    recipient: profile,
+    content,
+    createdAt: message.createdAt,
+  };
+}
+
 export async function requirePrivateKey(projectDir: string): Promise<JsonWebKey> {
   const path = privateKeyPath(projectDir);
   if (!(await fileExists(path))) {
     throw new Error(
       'The private identity key is missing. Restore private/identity.private.jwk.json from your backup before adding posts.',
+    );
+  }
+  return readJson<JsonWebKey>(path);
+}
+
+async function requireMessagePrivateKey(projectDir: string): Promise<JsonWebKey> {
+  const path = messagePrivateKeyPath(projectDir);
+  if (!(await fileExists(path))) {
+    throw new Error(
+      'The private message key is missing. Restore private/messages.private.jwk.json from your backup before reading messages.',
     );
   }
   return readJson<JsonWebKey>(path);
@@ -463,14 +524,17 @@ function createMessageId(createdAt: string): string {
   return `message_${Date.parse(createdAt).toString(36)}_${randomUUID()}`;
 }
 
-async function readRecipientProfile(input: string): Promise<OpenSocialNetworkIdentity> {
+async function readProfileInput(
+  input: string,
+  missingProfileMessage: string,
+): Promise<OpenSocialNetworkIdentity> {
   const trimmed = input.trim();
   if (!trimmed) {
-    throw new Error('Choose who should receive the message with --to.');
+    throw new Error('Choose a profile page folder, public folder, profile.json file, or profile URL.');
   }
 
   if (/^https?:\/\//iu.test(trimmed)) {
-    return readRemoteRecipientProfile(trimmed);
+    return readRemoteProfile(trimmed);
   }
 
   const path = trimmed.startsWith('file://') ? fileURLToPath(trimmed) : trimmed;
@@ -488,7 +552,7 @@ async function readRecipientProfile(input: string): Promise<OpenSocialNetworkIde
     }
   }
 
-  throw new Error('Could not find the recipient profile. Use --to with a page folder, public folder, profile.json file, or profile URL.');
+  throw new Error(missingProfileMessage);
 }
 
 async function isFile(path: string): Promise<boolean> {
@@ -499,10 +563,10 @@ async function isFile(path: string): Promise<boolean> {
   }
 }
 
-async function readRemoteRecipientProfile(input: string): Promise<OpenSocialNetworkIdentity> {
+async function readRemoteProfile(input: string): Promise<OpenSocialNetworkIdentity> {
   const response = await fetch(remoteProfileUrl(input));
   if (!response.ok) {
-    throw new Error(`Could not open recipient profile (${response.status}).`);
+    throw new Error(`Could not open profile (${response.status}).`);
   }
   return (await response.json()) as OpenSocialNetworkIdentity;
 }

@@ -227,6 +227,65 @@ describe('runCli', () => {
     expect(output.join('\n')).toContain('Send this file to Ben Franklin.');
   });
 
+  it('reads encrypted direct messages with the recipient page key', async () => {
+    const root = await makeTempRoot();
+    const senderDir = join(root, 'sender-page');
+    const recipientDir = join(root, 'recipient-page');
+    const sendOutput: string[] = [];
+    const readOutput: string[] = [];
+
+    await runCli(
+      [
+        'create',
+        senderDir,
+        '--name',
+        'Ada Lovelace',
+        '--handle',
+        'ada@example.com',
+        '--first-post',
+        'Hello from Ada.',
+      ],
+      {},
+    );
+    await runCli(
+      [
+        'create',
+        recipientDir,
+        '--name',
+        'Ben Franklin',
+        '--handle',
+        'ben@example.com',
+        '--first-post',
+        'Hello from Ben.',
+      ],
+      {},
+    );
+
+    await runCli(
+      [
+        'message',
+        'This should stay private.',
+        '--to',
+        recipientDir,
+        '--project',
+        senderDir,
+      ],
+      { stdout: (line) => sendOutput.push(line), stderr: (line) => sendOutput.push(line) },
+    );
+    const savedLine = sendOutput.find((line) => line.startsWith('Encrypted message saved to '));
+    const savedPath = savedLine!.replace('Encrypted message saved to ', '').trim();
+
+    expect(
+      await runCli(
+        ['read-message', savedPath, '--from', senderDir, '--project', recipientDir],
+        { stdout: (line) => readOutput.push(line), stderr: (line) => readOutput.push(line) },
+      ),
+    ).toBe(0);
+
+    expect(readOutput.join('\n')).toContain('From Ada Lovelace');
+    expect(readOutput.join('\n')).toContain('This should stay private.');
+  });
+
   it('fails validation after a signed action is tampered with', async () => {
     const root = await makeTempRoot();
     const projectDir = join(root, 'my-page');
@@ -274,6 +333,7 @@ describe('runCli', () => {
 
     expect(output.join('\n')).toContain('host the public folder anywhere');
     expect(output.join('\n')).toContain('open-social-network message "Private hello"');
+    expect(output.join('\n')).toContain('open-social-network read-message ./message.json');
   });
 
   it('returns a nonzero exit code for validation failures', async () => {

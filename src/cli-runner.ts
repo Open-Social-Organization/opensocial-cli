@@ -6,6 +6,7 @@ import {
   addReaction,
   createDirectMessage,
   createProject,
+  readDirectMessage,
 } from './project.js';
 import { validateProject } from './validate.js';
 import { createPreviewServer } from './preview.js';
@@ -41,6 +42,9 @@ export async function runCli(args: string[], io: CliIO = {}): Promise<number> {
         return 0;
       case 'message':
         await runMessage(commandArgs, stdout);
+        return 0;
+      case 'read-message':
+        await runReadMessage(commandArgs, stdout);
         return 0;
       case 'validate':
         return runValidate(commandArgs, stdout, stderr);
@@ -174,6 +178,30 @@ async function runMessage(args: string[], stdout: (line: string) => void): Promi
   stdout('Only that page can read the message.');
 }
 
+async function runReadMessage(args: string[], stdout: (line: string) => void): Promise<void> {
+  const parsed = parseArgs(args);
+  const messagePath = parsed.positionals[0]?.trim();
+  if (!messagePath) {
+    throw new Error(
+      'Choose a message file, for example: open-social-network read-message ./message.json --from ./their-page',
+    );
+  }
+
+  const projectDir = parsed.options.project ?? process.cwd();
+  const sender = requireOption(
+    parsed.options,
+    'from',
+    'Choose who sent it with --from ./their-page or --from https://their.page/.',
+  );
+  const summary = await readDirectMessage(projectDir, { messagePath, sender });
+
+  stdout(`From ${summary.sender.name || summary.sender.handle}`);
+  stdout(`To ${summary.recipient.name || summary.recipient.handle}`);
+  stdout(`Sent ${summary.createdAt}`);
+  stdout('');
+  stdout(summary.content);
+}
+
 async function runValidate(
   args: string[],
   stdout: (line: string) => void,
@@ -254,6 +282,8 @@ function isCommand(value: string | undefined): value is string {
         'react',
         'comment',
         'message',
+        'read-message',
+        'open-message',
         'validate',
         'check',
         'preview',
@@ -302,6 +332,10 @@ function normalizeCommand(command: string): string {
     return 'deploy';
   }
 
+  if (command === 'open-message') {
+    return 'read-message';
+  }
+
   return command;
 }
 
@@ -328,6 +362,7 @@ Usage:
   open-social-network react like --post post_001 --author person@example.com --project ./my-page
   open-social-network comment "Great post" --post post_001 --author person@example.com --project ./my-page
   open-social-network message "Private hello" --to ./their-page --project ./my-page
+  open-social-network read-message ./message.json --from ./their-page --project ./my-page
   open-social-network check --project ./my-page
   open-social-network preview --project ./my-page --port 4173
   open-social-network publish --project ./my-page --target folder --output ./public-site
