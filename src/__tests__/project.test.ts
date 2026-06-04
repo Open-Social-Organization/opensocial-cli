@@ -91,6 +91,10 @@ describe('Open Social Network project lifecycle', () => {
     expect(pageScript).toContain('renderProfileFollows(followList, profile.handle)');
     expect(pageSocialScript).toContain('export function summarizePostActions');
     expect(pageSocialScript).toContain('export function renderProfileFollows');
+    expect(pageSocialScript).toContain('aria-label="Public activity"');
+    expect(pageSocialScript).toContain('<strong>Activity</strong>');
+    expect(pageSocialScript).toContain('class="social-icon social-icon-like"');
+    expect(pageSocialScript).toContain('formatSocialDate(comment.createdAt)');
     expect(pageSocialScript).toContain('escapeHtml(comment.content)');
     expect(indexHtml).toContain('rel="icon"');
     expect(indexHtml).toContain('<h2>Following</h2>');
