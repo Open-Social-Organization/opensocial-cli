@@ -4,6 +4,7 @@ import {
   actionLogPath,
   discoveryPath,
   feedPath,
+  followListPath,
   messageInboxPath,
   privateKeyPath,
   profilePath,
@@ -14,6 +15,7 @@ import type {
   OpenSocialNetworkActionLog,
   OpenSocialNetworkDirectMessageLog,
   OpenSocialNetworkFeed,
+  OpenSocialNetworkFollowList,
   OpenSocialNetworkIdentity,
 } from './types.js';
 
@@ -48,6 +50,9 @@ export async function validateProject(projectDir: string): Promise<ValidationRes
   if (!(await fileExists(actionInboxPath(projectDir)))) {
     failures.push('public/opensocial/actions/inbox/index.json is missing');
   }
+  if (!(await fileExists(followListPath(projectDir)))) {
+    failures.push('public/opensocial/follows/index.json is missing');
+  }
   if (!(await fileExists(messageInboxPath(projectDir)))) {
     failures.push('public/opensocial/messages/inbox/index.json is missing');
   }
@@ -61,6 +66,7 @@ export async function validateProject(projectDir: string): Promise<ValidationRes
   const feed = await readJson<OpenSocialNetworkFeed>(feedPath(projectDir));
   const actionLog = await readJson<OpenSocialNetworkActionLog>(actionLogPath(projectDir));
   const actionInbox = await readJson<OpenSocialNetworkActionInbox>(actionInboxPath(projectDir));
+  const followList = await readJson<OpenSocialNetworkFollowList>(followListPath(projectDir));
   const messageLog = await readJson<OpenSocialNetworkDirectMessageLog>(messageInboxPath(projectDir));
 
   if (profile.protocol !== 'open-social-network' || profile.version !== '0.1') {
@@ -111,6 +117,27 @@ export async function validateProject(projectDir: string): Promise<ValidationRes
     for (const action of actionInbox.actions) {
       if (action?.target?.author !== profile.handle) {
         failures.push(`action ${action?.id || '(missing id)'} must target this page owner`);
+      }
+    }
+  }
+
+  if (followList.protocol !== 'open-social-network' || followList.version !== '0.1') {
+    failures.push('follow list must declare Open Social Network protocol version 0.1');
+  }
+
+  if (followList.owner !== profile.handle) {
+    failures.push('follow list owner must match profile handle');
+  }
+
+  if (!Array.isArray(followList.follows)) {
+    failures.push('follow list follows must be an array');
+  } else {
+    for (const follow of followList.follows) {
+      if (typeof follow?.profile !== 'string' || follow.profile.trim().length === 0) {
+        failures.push('follow list entries must include profile URLs');
+      }
+      if (follow?.handle !== undefined && typeof follow.handle !== 'string') {
+        failures.push('follow list entry handles must be strings when present');
       }
     }
   }

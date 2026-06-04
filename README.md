@@ -38,6 +38,8 @@ my-page/
 │   │   ├── actions/
 │   │   │   ├── index.json
 │   │   │   └── inbox/index.json
+│   │   ├── follows/
+│   │   │   └── index.json
 │   │   └── messages/
 │   │       └── inbox/index.json
 │   ├── page.js
@@ -49,7 +51,7 @@ my-page/
     └── messages.private.jwk.json
 ```
 
-The `public/` directory is safe to deploy. It includes the page, feed, profile, the owner's public action log, the page's public action inbox, and encrypted message inbox. The actor-owned action log at `public/opensocial/actions/index.json` lets compatible aggregators read portable likes, dislikes, and comments from your own page. The `private/` directory is not safe to publish.
+The `public/` directory is safe to deploy. It includes the page, feed, profile, the owner's public action log, the page's public action inbox, the portable follow list, and encrypted message inbox. The actor-owned action log at `public/opensocial/actions/index.json` lets compatible aggregators read portable likes, dislikes, and comments from your own page. The follow list at `public/opensocial/follows/index.json` lets compatible aggregators move your social graph with your page. The `private/` directory is not safe to publish.
 
 ## Why This Exists
 
@@ -230,7 +232,7 @@ This CLI is the guided path for creating, posting, validating, previewing, and p
 
 ### What v0.1 Is Trying To Prove
 
-v0.1 is intentionally small. It focuses on sovereign profiles, signed feeds, signed public actions, encrypted direct-message envelopes, and static web compatibility.
+v0.1 is intentionally small. It focuses on sovereign profiles, signed feeds, signed public actions, portable follow lists, encrypted direct-message envelopes, and static web compatibility.
 
 The goal is not to defeat every previous approach. The goal is to learn from them and test a different primitive: social identity as ordinary web infrastructure, inspectable by developers and usable by normal people.
 

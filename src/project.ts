@@ -7,6 +7,7 @@ import {
   configPath,
   discoveryPath,
   feedPath,
+  followListPath,
   messageInboxPath,
   messagePrivateKeyPath,
   privateKeyPath,
@@ -22,6 +23,7 @@ import {
   publicJwkFromPrivateJwk,
   publicMessageJwkFromPrivateJwk,
 } from './protocol/keys.js';
+import { createFollowList } from './protocol/follows.js';
 import { signPost } from './protocol/signing.js';
 import type {
   DeployTarget,
@@ -30,6 +32,7 @@ import type {
   OpenSocialNetworkConfig,
   OpenSocialNetworkDirectMessageLog,
   OpenSocialNetworkFeed,
+  OpenSocialNetworkFollowList,
   OpenSocialNetworkIdentity,
   UnsignedOpenSocialNetworkPost,
 } from './types.js';
@@ -88,6 +91,7 @@ export async function createProject(options: CreateProjectOptions): Promise<Proj
   const existingFeed = await loadExistingFeed(projectDir);
   const existingActionLog = await loadExistingActionLog(projectDir);
   const existingActionInbox = await loadExistingActionInbox(projectDir);
+  const existingFollowList = await loadExistingFollowList(projectDir);
   const existingMessageLog = await loadExistingMessageLog(projectDir);
   const posts = existingFeed?.posts ?? [];
 
@@ -115,6 +119,8 @@ export async function createProject(options: CreateProjectOptions): Promise<Proj
     owner: profile.handle,
     actions: [],
   };
+  const followList: OpenSocialNetworkFollowList =
+    existingFollowList ?? createFollowList(profile.handle, []);
   const messageLog: OpenSocialNetworkDirectMessageLog = existingMessageLog ?? {
     protocol: 'open-social-network',
     version: '0.1',
@@ -128,6 +134,7 @@ export async function createProject(options: CreateProjectOptions): Promise<Proj
   await writeJson(feedPath(projectDir), feed);
   await writeJson(actionLogPath(projectDir), actionLog);
   await writeJson(actionInboxPath(projectDir), actionInbox);
+  await writeJson(followListPath(projectDir), followList);
   await writeJson(messageInboxPath(projectDir), messageLog);
 
   return {
@@ -222,6 +229,14 @@ async function loadExistingActionInbox(
     return null;
   }
   return readJson<OpenSocialNetworkActionInbox>(path);
+}
+
+async function loadExistingFollowList(projectDir: string): Promise<OpenSocialNetworkFollowList | null> {
+  const path = followListPath(projectDir);
+  if (!(await fileExists(path))) {
+    return null;
+  }
+  return readJson<OpenSocialNetworkFollowList>(path);
 }
 
 async function loadExistingMessageLog(

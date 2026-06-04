@@ -58,6 +58,18 @@ export interface OpenSocialNetworkFeed {
   posts: OpenSocialNetworkPost[];
 }
 
+export interface OpenSocialNetworkFollow {
+  profile: string;
+  handle?: string;
+}
+
+export interface OpenSocialNetworkFollowList {
+  protocol: 'open-social-network';
+  version: '0.1';
+  owner: string;
+  follows: OpenSocialNetworkFollow[];
+}
+
 export type OpenSocialNetworkReaction = 'like' | 'dislike' | 'none';
 
 export interface OpenSocialNetworkActionTarget {

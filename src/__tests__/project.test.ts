@@ -35,6 +35,7 @@ describe('Open Social Network project lifecycle', () => {
     const actionInbox = await readJson(
       join(projectDir, 'public/opensocial/actions/inbox/index.json'),
     );
+    const followList = await readJson(join(projectDir, 'public/opensocial/follows/index.json'));
     const messageLog = await readJson(join(projectDir, 'public/opensocial/messages/inbox/index.json'));
     const privateKey = await readJson(join(projectDir, 'private/identity.private.jwk.json'));
     const messagePrivateKey = await readJson(join(projectDir, 'private/messages.private.jwk.json'));
@@ -64,6 +65,12 @@ describe('Open Social Network project lifecycle', () => {
       version: '0.1',
       owner: 'ada@example.com',
       actions: [],
+    });
+    expect(followList).toEqual({
+      protocol: 'open-social-network',
+      version: '0.1',
+      owner: 'ada@example.com',
+      follows: [],
     });
     expect(messageLog).toEqual({
       protocol: 'open-social-network',
@@ -243,6 +250,31 @@ describe('Open Social Network project lifecycle', () => {
 
     expect(validation.valid).toBe(false);
     expect(validation.failures).toContain('action inbox owner must match profile handle');
+  });
+
+  it('reports a follow list owner mismatch as invalid', async () => {
+    const root = await makeTempRoot();
+    const projectDir = join(root, 'my-page');
+
+    await createProject({
+      targetDir: projectDir,
+      handle: 'ada@example.com',
+      name: 'Ada Lovelace',
+      bio: '',
+      website: '',
+      baseUrl: '',
+      deployTarget: 'github',
+      firstPost: 'Original post.',
+    });
+    const followListPath = join(projectDir, 'public/opensocial/follows/index.json');
+    const followList = await readJson(followListPath);
+    followList.owner = 'mallory@example.com';
+    await writeJson(followListPath, followList);
+
+    const validation = await validateProject(projectDir);
+
+    expect(validation.valid).toBe(false);
+    expect(validation.failures).toContain('follow list owner must match profile handle');
   });
 
   it('reports malformed public action inbox actions as invalid', async () => {
