@@ -15,6 +15,10 @@
   </head>
   <body>
     <main class="page-shell">
+      <section class="banner-section" aria-label="Open Social Network page cover">
+        <img src="./assets/open-social-network-logo.png" alt="" class="cover-mark" />
+      </section>
+
       <section class="profile-hero">
         <img src="./assets/open-social-network-logo.png" alt="" class="profile-logo" />
         <div>
@@ -37,8 +41,19 @@
           <summary>Technical details</summary>
           <a href="./profile.json">Profile file</a>
           <a href="./feed.json">Feed file</a>
+          <a href="./opensocial/follows/index.json">Following file</a>
           <a href="./.well-known/open-social-network.json">Discovery file</a>
         </details>
+      </section>
+
+      <section class="follow-section" aria-label="Following">
+        <div class="section-header">
+          <div>
+            <h2>Following</h2>
+            <p>Pages this profile follows. This list can move with the page.</p>
+          </div>
+        </div>
+        <div data-follows></div>
       </section>
     </main>
 

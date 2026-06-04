@@ -83,13 +83,18 @@ describe('Open Social Network project lifecycle', () => {
     expect(gitignore).toContain('private/');
     expect(nojekyll.trim()).toBe('');
     expect(pageScript).toContain(
-      "import { renderPostSocialSummary, summarizePostActions } from './page-social.js';",
+      "renderProfileFollows",
     );
     expect(pageScript).toContain("fetchJson('./feed.json')");
     expect(pageScript).toContain("fetchOptionalJson('./opensocial/actions/inbox/index.json'");
+    expect(pageScript).toContain("fetchOptionalJson('./opensocial/follows/index.json'");
+    expect(pageScript).toContain('renderProfileFollows(followList, profile.handle)');
     expect(pageSocialScript).toContain('export function summarizePostActions');
+    expect(pageSocialScript).toContain('export function renderProfileFollows');
     expect(pageSocialScript).toContain('escapeHtml(comment.content)');
     expect(indexHtml).toContain('rel="icon"');
+    expect(indexHtml).toContain('<h2>Following</h2>');
+    expect(indexHtml).toContain('data-follows');
   });
 
   it('does not rotate the private key when init runs again', async () => {

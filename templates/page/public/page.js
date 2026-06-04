@@ -1,8 +1,13 @@
-import { renderPostSocialSummary, summarizePostActions } from './page-social.js';
+import {
+  renderPostSocialSummary,
+  renderProfileFollows,
+  summarizePostActions,
+} from './page-social.js';
 
 const profileName = document.querySelector('[data-profile-name]');
 const profileBio = document.querySelector('[data-profile-bio]');
 const postsRoot = document.querySelector('[data-posts]');
+const followsRoot = document.querySelector('[data-follows]');
 const verificationStatus = document.querySelector('[data-verification-status]');
 
 await boot();
@@ -17,10 +22,17 @@ async function boot() {
       owner: profile.handle,
       actions: [],
     });
+    const followList = await fetchOptionalJson('./opensocial/follows/index.json', {
+      protocol: 'open-social-network',
+      version: '0.1',
+      owner: profile.handle,
+      follows: [],
+    });
     const verifiedPosts = [];
 
     profileName.textContent = profile.name;
     profileBio.textContent = profile.bio || profile.handle;
+    followsRoot.innerHTML = renderProfileFollows(followList, profile.handle);
 
     for (const post of feed.posts) {
       if (await verifyPost(post, profile)) {

@@ -23,6 +23,7 @@ npx open-social-network
 ```
 
 The CLI asks simple questions and creates a standalone Open Social Network page project.
+The page it creates shows the profile, signed posts, and the public following list in a normal social-page layout.
 
 The generated project contains:
 

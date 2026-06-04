@@ -69,6 +69,30 @@ export function renderPostSocialSummary(summary) {
   `;
 }
 
+export function renderProfileFollows(followList, owner) {
+  const follows = normalizeFollows(followList, owner);
+
+  if (follows.length === 0) {
+    return '<p class="empty-state">Not following anyone yet.</p>';
+  }
+
+  return `
+    <div class="follow-count">${formatCount(follows.length, 'page')}</div>
+    <div class="follow-list">
+      ${follows
+        .map(
+          (follow) => `
+            <a class="follow-card" href="${escapeAttribute(follow.profile)}">
+              <strong>${escapeHtml(follow.handle || readableProfileName(follow.profile))}</strong>
+              <span>${escapeHtml(readableProfileName(follow.profile))}</span>
+            </a>
+          `,
+        )
+        .join('')}
+    </div>
+  `;
+}
+
 function targetsPost(action, post) {
   return (
     action?.target?.type === 'post' &&
@@ -77,8 +101,46 @@ function targetsPost(action, post) {
   );
 }
 
+function normalizeFollows(followList, owner) {
+  if (
+    followList?.protocol !== 'open-social-network' ||
+    followList.version !== '0.1' ||
+    followList.owner !== owner ||
+    !Array.isArray(followList.follows)
+  ) {
+    return [];
+  }
+
+  const followsByProfile = new Map();
+
+  for (const follow of followList.follows) {
+    const profile = typeof follow?.profile === 'string' ? follow.profile.trim() : '';
+    const handle = typeof follow?.handle === 'string' ? follow.handle.trim() : '';
+
+    if (!profile || followsByProfile.has(profile)) {
+      continue;
+    }
+
+    followsByProfile.set(profile, {
+      profile,
+      ...(handle ? { handle } : {}),
+    });
+  }
+
+  return [...followsByProfile.values()];
+}
+
 function formatCount(count, singular) {
   return `${count} ${count === 1 ? singular : `${singular}s`}`;
+}
+
+function readableProfileName(value) {
+  try {
+    const url = new URL(value);
+    return url.host.replace(/^www\./u, '');
+  } catch {
+    return value;
+  }
 }
 
 function escapeHtml(value) {
@@ -88,4 +150,8 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value);
 }
