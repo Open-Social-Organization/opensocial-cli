@@ -207,6 +207,15 @@ export interface ReadDirectMessageSummary {
   createdAt: string;
 }
 
+export interface ImportedDirectMessageSummary extends ReadDirectMessageSummary {
+  added: boolean;
+  messageCount: number;
+}
+
+interface OpenedDirectMessageSummary extends ReadDirectMessageSummary {
+  message: OpenSocialNetworkDirectMessage;
+}
+
 export async function addReaction(
   projectDirInput: string,
   options: AddReactionOptions,
@@ -277,6 +286,46 @@ export async function readDirectMessage(
   projectDirInput: string,
   options: ReadDirectMessageOptions,
 ): Promise<ReadDirectMessageSummary> {
+  const opened = await openDirectMessage(projectDirInput, options);
+
+  return {
+    sender: opened.sender,
+    recipient: opened.recipient,
+    content: opened.content,
+    createdAt: opened.createdAt,
+  };
+}
+
+export async function importDirectMessage(
+  projectDirInput: string,
+  options: ReadDirectMessageOptions,
+): Promise<ImportedDirectMessageSummary> {
+  const projectDir = resolve(projectDirInput);
+  const opened = await openDirectMessage(projectDir, options);
+  const messageLog = await loadMessageInboxForWrite(projectDir, opened.recipient.handle);
+  const alreadyExists = messageLog.messages.some(
+    (message) => isMessageWithId(message, opened.message.id),
+  );
+
+  if (!alreadyExists) {
+    messageLog.messages = [opened.message, ...messageLog.messages];
+    await writeJson(messageInboxPath(projectDir), messageLog);
+  }
+
+  return {
+    sender: opened.sender,
+    recipient: opened.recipient,
+    content: opened.content,
+    createdAt: opened.createdAt,
+    added: !alreadyExists,
+    messageCount: messageLog.messages.length,
+  };
+}
+
+async function openDirectMessage(
+  projectDirInput: string,
+  options: ReadDirectMessageOptions,
+): Promise<OpenedDirectMessageSummary> {
   const projectDir = resolve(projectDirInput);
   const profile = await readJson<OpenSocialNetworkIdentity>(profilePath(projectDir));
   const messagePrivateJwk = await requireMessagePrivateKey(projectDir);
@@ -301,11 +350,48 @@ export async function readDirectMessage(
   );
 
   return {
+    message,
     sender,
     recipient: profile,
     content,
     createdAt: message.createdAt,
   };
+}
+
+async function loadMessageInboxForWrite(
+  projectDir: string,
+  ownerHandle: string,
+): Promise<OpenSocialNetworkDirectMessageLog> {
+  const path = messageInboxPath(projectDir);
+
+  if (!(await fileExists(path))) {
+    return {
+      protocol: 'open-social-network',
+      version: '0.1',
+      owner: ownerHandle,
+      messages: [],
+    };
+  }
+
+  const messageLog = await readJson<OpenSocialNetworkDirectMessageLog>(path);
+
+  if (messageLog.protocol !== 'open-social-network' || messageLog.version !== '0.1') {
+    throw new Error('Message inbox is not a valid Open Social Network inbox.');
+  }
+
+  if (messageLog.owner !== ownerHandle) {
+    throw new Error('Message inbox owner does not match this page.');
+  }
+
+  if (!Array.isArray(messageLog.messages)) {
+    throw new Error('Message inbox messages must be an array.');
+  }
+
+  return messageLog;
+}
+
+function isMessageWithId(value: unknown, id: string): boolean {
+  return Boolean(value && typeof value === 'object' && 'id' in value && value.id === id);
 }
 
 export async function requirePrivateKey(projectDir: string): Promise<JsonWebKey> {

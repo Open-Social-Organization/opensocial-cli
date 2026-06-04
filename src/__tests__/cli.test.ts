@@ -286,6 +286,79 @@ describe('runCli', () => {
     expect(readOutput.join('\n')).toContain('This should stay private.');
   });
 
+  it('imports received messages into the public encrypted inbox', async () => {
+    const root = await makeTempRoot();
+    const senderDir = join(root, 'sender-page');
+    const recipientDir = join(root, 'recipient-page');
+    const sendOutput: string[] = [];
+    const importOutput: string[] = [];
+
+    await runCli(
+      [
+        'create',
+        senderDir,
+        '--name',
+        'Ada Lovelace',
+        '--handle',
+        'ada@example.com',
+        '--first-post',
+        'Hello from Ada.',
+      ],
+      {},
+    );
+    await runCli(
+      [
+        'create',
+        recipientDir,
+        '--name',
+        'Ben Franklin',
+        '--handle',
+        'ben@example.com',
+        '--first-post',
+        'Hello from Ben.',
+      ],
+      {},
+    );
+
+    await runCli(
+      [
+        'message',
+        'This should stay private.',
+        '--to',
+        recipientDir,
+        '--project',
+        senderDir,
+      ],
+      { stdout: (line) => sendOutput.push(line), stderr: (line) => sendOutput.push(line) },
+    );
+    const savedLine = sendOutput.find((line) => line.startsWith('Encrypted message saved to '));
+    const savedPath = savedLine!.replace('Encrypted message saved to ', '').trim();
+
+    expect(
+      await runCli(
+        ['import-message', savedPath, '--from', senderDir, '--project', recipientDir],
+        { stdout: (line) => importOutput.push(line), stderr: (line) => importOutput.push(line) },
+      ),
+    ).toBe(0);
+    expect(
+      await runCli(['receive-message', savedPath, '--from', senderDir, '--project', recipientDir], {}),
+    ).toBe(0);
+
+    const inbox = JSON.parse(
+      await readFile(join(recipientDir, 'public/opensocial/messages/inbox/index.json'), 'utf8'),
+    );
+
+    expect(inbox.owner).toBe('ben@example.com');
+    expect(inbox.messages).toHaveLength(1);
+    expect(inbox.messages[0]).toMatchObject({
+      kind: 'direct-message',
+      sender: 'ada@example.com',
+      recipient: 'ben@example.com',
+    });
+    expect(JSON.stringify(inbox)).not.toContain('This should stay private.');
+    expect(importOutput.join('\n')).toContain('Message saved to public encrypted inbox.');
+  });
+
   it('fails validation after a signed action is tampered with', async () => {
     const root = await makeTempRoot();
     const projectDir = join(root, 'my-page');
@@ -334,6 +407,7 @@ describe('runCli', () => {
     expect(output.join('\n')).toContain('host the public folder anywhere');
     expect(output.join('\n')).toContain('open-social-network message "Private hello"');
     expect(output.join('\n')).toContain('open-social-network read-message ./message.json');
+    expect(output.join('\n')).toContain('open-social-network import-message ./message.json');
   });
 
   it('returns a nonzero exit code for validation failures', async () => {

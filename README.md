@@ -13,9 +13,10 @@ It turns the protocol into a real user flow:
 3. like, dislike, and comment with signed portable actions
 4. send encrypted direct messages
 5. read encrypted direct messages
-6. check that everything verifies
-7. preview locally
-8. publish anywhere static files can be hosted
+6. import received messages into the public encrypted inbox
+7. check that everything verifies
+8. preview locally
+9. publish anywhere static files can be hosted
 
 ## In One Minute
 
@@ -111,6 +112,14 @@ npx open-social-network read-message ./message.json --from ./their-page
 ```
 
 The CLI uses your page's private message key and the sender's public profile to verify and open the message locally.
+
+Save a received message in your page inbox:
+
+```bash
+npx open-social-network import-message ./message.json --from ./their-page
+```
+
+This verifies and opens the message, then saves only the encrypted envelope to `public/opensocial/messages/inbox/index.json`. That public inbox is safe to host because it does not contain the plaintext message. The simpler alias `receive-message` works too.
 
 Check that the page is valid:
 
@@ -225,6 +234,8 @@ open-social-network react none --post post_001 --author person@example.com --pro
 open-social-network comment "Great post" --post post_001 --author person@example.com --project ./my-page
 open-social-network message "Private hello" --to ./their-page --project ./my-page
 open-social-network read-message ./message.json --from ./their-page --project ./my-page
+open-social-network import-message ./message.json --from ./their-page --project ./my-page
+open-social-network receive-message ./message.json --from ./their-page --project ./my-page
 open-social-network validate --project ./my-page
 open-social-network check --project ./my-page
 open-social-network preview --project ./my-page --port 4173
